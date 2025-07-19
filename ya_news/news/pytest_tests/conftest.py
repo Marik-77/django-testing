@@ -1,17 +1,12 @@
 from datetime import datetime, timedelta
 
 import pytest
-from django.conf import settings
 from django.test.client import Client
-from django.urls import reverse
 from django.utils import timezone
+from django.conf import settings
+from django.urls import reverse
 
-from news.models import Comment, News
-
-
-@pytest.fixture(autouse=True)
-def db_connection(db):
-    pass
+from news.models import News, Comment
 
 
 @pytest.fixture
@@ -39,56 +34,50 @@ def not_author_client(not_author):
 
 
 @pytest.fixture
-def news():
-    return News.objects.create(title='Заголовок', text='Текст')
-
-
-@pytest.fixture
-def comment(news, author):
-    return Comment.objects.create(
-        news=news,
-        author=author,
-        text='Текст комментария'
-    )
-
-
-@pytest.fixture
-def home_url():
-    return reverse('news:home')
-
-
-@pytest.fixture
-def login_url():
+def url_login():
     return reverse('users:login')
 
 
 @pytest.fixture
-def logout_url():
-    return reverse('users:logout')
-
-
-@pytest.fixture
-def signup_url():
+def url_signup():
     return reverse('users:signup')
 
 
 @pytest.fixture
-def detail_url(news):
+def url_home():
+    return reverse('news:home')
+
+
+@pytest.fixture
+def url_detail_news(news):
     return reverse('news:detail', args=(news.id,))
 
 
 @pytest.fixture
-def comment_delete_url(comment):
+def url_detail_comment(comment):
+    return reverse('news:detail', args=(comment.id,))
+
+
+@pytest.fixture
+def url_delete_comment(comment):
     return reverse('news:delete', args=(comment.id,))
 
 
 @pytest.fixture
-def comment_edit_url(comment):
+def url_edit_comment(comment):
     return reverse('news:edit', args=(comment.id,))
 
 
 @pytest.fixture
-def many_news():
+def news():
+    return News.objects.create(
+        title='Новость',
+        text='Текст новости',
+    )
+
+
+@pytest.fixture
+def all_news(news):
     today = datetime.today()
     all_news = [
         News(
@@ -102,20 +91,26 @@ def many_news():
 
 
 @pytest.fixture
-def many_comments(author, news):
-    now = timezone.now()
-    for index in range(10):
-        comment = Comment.objects.create(
-            news=news,
-            author=author,
-            text=f'Комментарий {index}.'
-        )
-        comment.created = now - timedelta(days=index)
-        comment.save()
+def form_data():
+    return {
+        'text': 'Новый текст',
+    }
 
 
 @pytest.fixture
-def comment_form():
-    return {
-        'text': 'Новый текст комментария'
-    }
+def comment(news, author):
+    return Comment.objects.create(
+        news=news,
+        text='Текст комментария',
+        author=author
+    )
+
+
+@pytest.fixture
+def new_comment(news, author):
+    now = timezone.now()
+    for index in range(10):
+        new_comment = Comment.objects.create(
+            news=news, author=author, text=f'Tекст {index}',
+        )
+        new_comment.created = now + timedelta(days=index)
