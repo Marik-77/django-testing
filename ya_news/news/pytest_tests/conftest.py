@@ -1,12 +1,11 @@
 from datetime import datetime, timedelta
 
 import pytest
-from django.test.client import Client
-from django.utils import timezone
 from django.conf import settings
+from django.test.client import Client
 from django.urls import reverse
-
-from news.models import News, Comment
+from django.utils import timezone
+from news.models import Comment, News
 
 
 @pytest.fixture
@@ -91,13 +90,6 @@ def all_news(news):
 
 
 @pytest.fixture
-def form_data():
-    return {
-        'text': 'Новый текст',
-    }
-
-
-@pytest.fixture
 def comment(news, author):
     return Comment.objects.create(
         news=news,
@@ -107,6 +99,12 @@ def comment(news, author):
 
 
 @pytest.fixture
+def new_comment(news, author):
+    for index in range(10):
+        Comment.objects.create(
+            news=news, author=author, text=f'Tекст {index}',
+        )
+        
 def new_comment(news, author):
     now = timezone.now()
     for index in range(10):

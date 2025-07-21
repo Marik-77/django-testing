@@ -1,14 +1,9 @@
 from http import HTTPStatus
 
 import pytest
-from pytest_django.asserts import assertRedirects, assertFormError
-from django.contrib.auth import get_user_model
-
 from news.forms import BAD_WORDS, WARNING
-from news.models import Comment
-
-
-User = get_user_model()
+from news.models import Comment, User
+from pytest_django.asserts import assertFormError, assertRedirects
 
 
 @pytest.mark.django_db

@@ -1,30 +1,14 @@
-from django.contrib.auth import get_user_model
-from django.test import Client, TestCase
-from django.urls import reverse
-
-from notes.models import Note
 from notes.forms import NoteForm
+from notes.models import Note
+from notes.tests.common import (URL_ADD, URL_LIST, BaseNoteTestCase,
+                                get_url_edit)
 
-User = get_user_model()
 
-
-class TestContent(TestCase):
+class TestContent(BaseNoteTestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.author = User.objects.create(username='Лев Толстой')
-        cls.author_client = Client()
-        cls.author_client.force_login(cls.author)
-        cls.not_author = User.objects.create(username='Читатель простой')
-        cls.not_author_client = Client()
-        cls.not_author_client.force_login(cls.not_author)
-        cls.note = Note.objects.create(
-            title='Заголовок',
-            text='Текст',
-            slug='note-slug',
-            author=cls.author)
-        cls.url_list = reverse('notes:list')
-        cls.url_edit = reverse('notes:edit', args=(cls.note.slug,))
-        cls.url_add = reverse('notes:add')
+        super().setUpTestData()
+        cls.url_edit = get_url_edit(cls.note)
 
     def test_notes_list_for_different_users(self):
         """
@@ -38,7 +22,7 @@ class TestContent(TestCase):
         )
         for user, result in users_result:
             with self.subTest(user=user):
-                response = user.get(self.url_list)
+                response = user.get(URL_LIST)
                 object_list = response.context['object_list']
                 assert (self.note in object_list) is result
 
@@ -47,7 +31,7 @@ class TestContent(TestCase):
         Проверяем, что на страницы создания и редактирования
         заметки передаются формы.
         """
-        urls = (self.url_edit, self.url_add)
+        urls = (self.url_edit, URL_ADD)
         for url in urls:
             with self.subTest(url=url):
                 response = self.author_client.get(url)

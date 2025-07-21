@@ -1,10 +1,10 @@
 import pytest
 from django.conf import settings
-
 from news.forms import CommentForm
 
+pytestmark = [pytest.mark.django_db]
 
-@pytest.mark.django_db
+
 def test_news_count(client, url_home, all_news):
     """Проверяем количество новостей на главной странице."""
     response = client.get(url_home)
@@ -14,7 +14,6 @@ def test_news_count(client, url_home, all_news):
     assert news_count == settings.NEWS_COUNT_ON_HOME_PAGE
 
 
-@pytest.mark.django_db
 def test_news_order(client, url_home):
     """Проверяем сортировку новостей от самой свежей к самой старой."""
     response = client.get(url_home)
@@ -25,7 +24,6 @@ def test_news_order(client, url_home):
     assert all_dates == sorted_dates
 
 
-@pytest.mark.django_db
 def test_comments_order(client, url_detail_comment, new_comment):
     """На отдельной странице новости проверяем сортировку
     комментариев от старой к новой.
@@ -39,7 +37,6 @@ def test_comments_order(client, url_detail_comment, new_comment):
     assert all_timestamps == sorted_timestamps
 
 
-@pytest.mark.django_db
 def test_anonymous_client_has_no_form(client, url_detail_comment):
     """
     Проверяем, что анонимному пользователю недоступна
@@ -49,7 +46,6 @@ def test_anonymous_client_has_no_form(client, url_detail_comment):
     assert 'form' not in response.context
 
 
-@pytest.mark.django_db
 def test_authorized_client_has_form(author_client, url_detail_comment):
     """
     Проверяем, что авторизованному пользователю доступна

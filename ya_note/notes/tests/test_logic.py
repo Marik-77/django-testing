@@ -1,13 +1,11 @@
-from pytils.translit import slugify
 from http import HTTPStatus
 
 from django.contrib.auth import get_user_model
-from django.urls import reverse
 from django.test import Client, TestCase
-
-from notes.models import Note
+from django.urls import reverse
 from notes.forms import WARNING
-
+from notes.models import Note
+from pytils.translit import slugify
 
 User = get_user_model()
 

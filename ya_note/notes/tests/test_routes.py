@@ -1,44 +1,25 @@
 from http import HTTPStatus
 
-from django.contrib.auth import get_user_model
-from django.test import Client, TestCase
-from django.urls import reverse
-
 from notes.models import Note
+from notes.tests.common import (URL_ADD, URL_HOME, URL_LIST, URL_LOGIN,
+                                URL_SIGNUP, URL_SUCCESS, BaseNoteTestCase,
+                                get_url_delete, get_url_detail, get_url_edit)
 
-User = get_user_model()
 
-
-class TestRoutes(TestCase):
+class TestRoutes(BaseNoteTestCase):
 
     @classmethod
     def setUpTestData(cls):
-        cls.author = User.objects.create(username='Лев Толстой')
-        cls.author_client = Client()
-        cls.author_client.force_login(cls.author)
-        cls.not_author = User.objects.create(username='Читатель простой')
-        cls.not_author_client = Client()
-        cls.not_author_client.force_login(cls.not_author)
-        cls.note = Note.objects.create(
-            title='Заголовок',
-            text='Текст',
-            slug='note-slug',
-            author=cls.author)
-        cls.url_add = reverse('notes:add')
-        cls.url_success = reverse('notes:success')
-        cls.url_home = reverse('notes:home')
-        cls.url_detail = reverse('notes:detail', args=(cls.note.slug,))
-        cls.url_edit = reverse('notes:edit', args=(cls.note.slug,))
-        cls.url_delete = reverse('notes:delete', args=(cls.note.slug,))
-        cls.url_list = reverse('notes:list')
-        cls.url_login = reverse('users:login')
-        cls.url_signup = reverse('users:signup')
+        super().setUpTestData()
+        cls.url_detail = get_url_detail(cls.note)
+        cls.url_edit = get_url_edit(cls.note)
+        cls.url_delete = get_url_delete(cls.note)
 
     def test_pages_availability(self):
         """Проверяем, что анонимному пользователю доступны страницы:
         главная страница, регистрации пользователей, входа в учётную запись.
         """
-        urls = (self.url_home, self.url_login, self.url_signup)
+        urls = (URL_HOME, URL_LOGIN, URL_SIGNUP)
         for url in urls:
             with self.subTest(url=url):
                 response = self.client.get(url)
@@ -68,7 +49,7 @@ class TestRoutes(TestCase):
         доступны страницы: со списком заметок, успешного
         добавления заметки, добавления новой заметки.
         """
-        urls = (self.url_list, self.url_success, self.url_add)
+        urls = (URL_LIST, URL_SUCCESS, URL_ADD)
         for url in urls:
             with self.subTest(url=url):
                 response = self.not_author_client.get(url)
@@ -81,13 +62,23 @@ class TestRoutes(TestCase):
         перенаправляется на страницу логина.
         """
         urls = (
-            self.url_list,
+            URL_LIST,
             self.url_edit,
+            self.url_delete,
+            URL_SUCCESS,
+            URL_ADD,
+            self.url_detail
+        )
+        for url in urls:
+            with self.subTest(url=url):
+                redirect_url = f'{URL_LOGIN}?next={url}'
+                response = self.client.get(url)
+                self.assertRedirects(response, redirect_url)
             self.url_delete,
             self.url_success,
             self.url_add,
             self.url_detail
-        )
+        
         for url in urls:
             with self.subTest(url=url):
                 redirect_url = f'{self.url_login}?next={url}'

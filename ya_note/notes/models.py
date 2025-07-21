@@ -1,7 +1,8 @@
-from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.db import models
-
 from pytils.translit import slugify
+
+User = get_user_model()
 
 
 class Note(models.Model):
@@ -24,7 +25,7 @@ class Note(models.Model):
                    'латиницу, цифры, дефисы и знаки подчёркивания')
     )
     author = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
+        User,
         on_delete=models.CASCADE,
     )
 
