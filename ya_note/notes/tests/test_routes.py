@@ -1,6 +1,5 @@
 from http import HTTPStatus
 
-from notes.models import Note
 from notes.tests.common import (URL_ADD, URL_HOME, URL_LIST, URL_LOGIN,
                                 URL_SIGNUP, URL_SUCCESS, BaseNoteTestCase,
                                 get_url_delete, get_url_detail, get_url_edit)
@@ -78,7 +77,7 @@ class TestRoutes(BaseNoteTestCase):
             self.url_success,
             self.url_add,
             self.url_detail
-        
+
         for url in urls:
             with self.subTest(url=url):
                 redirect_url = f'{self.url_login}?next={url}'

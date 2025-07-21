@@ -104,7 +104,8 @@ def new_comment(news, author):
         Comment.objects.create(
             news=news, author=author, text=f'Tекст {index}',
         )
-        
+
+
 def new_comment(news, author):
     now = timezone.now()
     for index in range(10):

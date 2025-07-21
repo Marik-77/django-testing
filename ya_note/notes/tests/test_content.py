@@ -1,5 +1,4 @@
 from notes.forms import NoteForm
-from notes.models import Note
 from notes.tests.common import (URL_ADD, URL_LIST, BaseNoteTestCase,
                                 get_url_edit)
 
