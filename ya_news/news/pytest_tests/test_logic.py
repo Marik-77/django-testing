@@ -5,7 +5,7 @@ from news.forms import BAD_WORDS, WARNING
 from news.models import Comment
 from pytest_django.asserts import assertFormError, assertRedirects
 
-form_data = {'text': 'Новый текст',}
+form_data = {'text': 'Новый текст', }
 
 
 @pytest.mark.django_db
