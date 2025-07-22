@@ -5,17 +5,17 @@ from news.forms import BAD_WORDS, WARNING
 from news.models import Comment
 from pytest_django.asserts import assertFormError, assertRedirects
 
-FORM_DATA = { 'text': 'Новый текст', }
+form_data = {'text': 'Новый текст',}
 
 
 @pytest.mark.django_db
 def test_anonymous_user_cant_create_comment(
     client,
     url_detail_news,
-    FORM_DATA
+    form_data
 ):
     """Проверяем, что анонимный пользователь не может отправить комментарий."""
-    client.post(url_detail_news, data=FORM_DATA)
+    client.post(url_detail_news, data=form_data)
     comments_count = Comment.objects.count()
     assert comments_count == 0
 
@@ -26,18 +26,18 @@ def test_user_can_create_comment(
     not_author_client,
     news,
     url_detail_news,
-    FORM_DATA
+    form_data
 ):
     """
     Проверяем, что авторизованный пользователь
     может отправить комментарий.
     """
-    response = not_author_client.post(url_detail_news, data=FORM_DATA)
+    response = not_author_client.post(url_detail_news, data=form_data)
     assertRedirects(response, f'{url_detail_news}#comments')
     comments_count = Comment.objects.count()
     assert comments_count == 1
     comment = Comment.objects.get()
-    assert comment.text == FORM_DATA['text']
+    assert comment.text == form_data['text']
     assert comment.news == news
     assert comment.author == not_author
 
@@ -99,13 +99,13 @@ def test_author_can_edit_comment(
     url_edit_comment,
     author,
     comment,
-    FORM_DATA
+    form_data
 ):
     """Проверяем, что автор может редактировать свои комментарии."""
-    response = author_client.post(url_edit_comment, data=FORM_DATA)
+    response = author_client.post(url_edit_comment, data=form_data)
     assertRedirects(response, f'{url_detail_news}#comments')
     comment.refresh_from_db()
-    assert comment.text == FORM_DATA['text']
+    assert comment.text == form_data['text']
     assert comment.news == news
     assert comment.author == author
 
@@ -115,13 +115,13 @@ def test_user_cant_edit_comment_of_another_user(
     not_author_client,
     url_edit_comment,
     comment,
-    FORM_DATA
+    form_data
 ):
     """
     Проверяем, что авторизованный пользователь
     не может редактировать чужие комментарии.
     """
-    response = not_author_client.post(url_edit_comment, data=FORM_DATA)
+    response = not_author_client.post(url_edit_comment, data=form_data)
     assert response.status_code == HTTPStatus.NOT_FOUND
     comment_db = Comment.objects.get(id=comment.id)
     assert comment.text == comment_db.text
