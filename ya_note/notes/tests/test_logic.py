@@ -1,11 +1,9 @@
 from http import HTTPStatus
 
-from common import (URL_ADD, URL_LOGIN, URL_SUCCESS, BaseNoteTestCase,
-                    get_url_delete, get_url_edit)
-from django.test import Client, TestCase
-from django.urls import reverse
+from notes.common import (URL_ADD, URL_LOGIN, URL_SUCCESS, BaseNoteTestCase,
+                          get_url_delete, get_url_edit)
 from notes.forms import WARNING
-from notes.models import Note, User
+from notes.models import Note
 from pytils.translit import slugify
 
 
@@ -117,6 +115,7 @@ class TestEditDeleteLogic(BaseNoteTestCase):
         response = self.not_author_client.post(self.url_delete)
         self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
         self.assertEqual(Note.objects.count(), note_count_db)
+
     def test_author_can_edit_note(self):
         """Проверяем, что пользователь может редактировать свои заметки."""
         response = self.author_client.post(self.url_edit, self.form_data)

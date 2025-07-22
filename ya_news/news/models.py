@@ -6,6 +6,7 @@ from django.db import models
 
 User = get_user_model()
 
+
 class News(models.Model):
     title = models.CharField(max_length=50)
     text = models.TextField()

@@ -100,8 +100,7 @@ def comment(news, author):
 
 @pytest.fixture
 def new_comment(news, author):
-    now = timezone.now()
     for index in range(10):
-        new_comment = Comment.objects.create(
+        Comment.objects.create(
             news=news, author=author, text=f'Tекст {index}',
         )
