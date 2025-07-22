@@ -1,8 +1,9 @@
 from http import HTTPStatus
 
 import pytest
+from news.constants import FORM_DATA as form_data
 from news.forms import BAD_WORDS, WARNING
-from news.models import Comment
+from news.models import Comment, User
 from pytest_django.asserts import assertFormError, assertRedirects
 
 

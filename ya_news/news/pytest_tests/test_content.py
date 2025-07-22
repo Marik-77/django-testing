@@ -54,3 +54,4 @@ def test_authorized_client_has_form(author_client, url_detail_comment):
     response = author_client.get(url_detail_comment)
     assert 'form' in response.context
     assert isinstance(response.context['form'], CommentForm)
+    response = author_client.get(url_detail_comment)

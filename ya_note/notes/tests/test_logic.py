@@ -1,32 +1,26 @@
 from http import HTTPStatus
 
-from django.contrib.auth import get_user_model
+from common import (URL_ADD, URL_LOGIN, URL_SUCCESS, BaseNoteTestCase,
+                    get_url_delete, get_url_edit)
 from django.test import Client, TestCase
 from django.urls import reverse
 from notes.forms import WARNING
-from notes.models import Note
+from notes.models import Note, User
 from pytils.translit import slugify
 
-User = get_user_model()
 
-
-class TestCreateLogic(TestCase):
+class TestCreateLogic(BaseNoteTestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.author = User.objects.create(username='Лев Толстой')
-        cls.author_client = Client()
-        cls.author_client.force_login(cls.author)
-        cls.not_author = User.objects.create(username='Читатель простой')
-        cls.not_author_client = Client()
-        cls.not_author_client.force_login(cls.not_author)
+        super().setUpTestData()
         cls.form_data = {
             'title': 'Новый заголовок',
             'text': 'Новый текст',
             'slug': 'new-slug'
         }
-        cls.url_add = reverse('notes:add')
-        cls.url_success = reverse('notes:success')
-        cls.url_login = reverse('users:login')
+        cls.url_add = URL_ADD
+        cls.url_success = URL_SUCCESS
+        cls.url_login = URL_LOGIN
 
     def test_user_can_create_note(self):
         """Проверяем, что залогиненный пользователь может создать заметку."""
@@ -63,29 +57,19 @@ class TestCreateLogic(TestCase):
         self.assertEqual(new_note.slug, expected_slug)
 
 
-class TestEditDeleteLogic(TestCase):
+class TestEditDeleteLogic(BaseNoteTestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.author = User.objects.create(username='Лев Толстой')
-        cls.author_client = Client()
-        cls.author_client.force_login(cls.author)
-        cls.not_author = User.objects.create(username='Читатель простой')
-        cls.not_author_client = Client()
-        cls.not_author_client.force_login(cls.not_author)
-        cls.note = Note.objects.create(
-            title='Заголовок',
-            text='Текст',
-            slug='note-slug',
-            author=cls.author)
+        super().setUpTestData()
         cls.form_data = {
             'title': 'Новый заголовок',
             'text': 'Новый текст',
             'slug': 'new-slug'
         }
-        cls.url_edit = reverse('notes:edit', args=(cls.note.slug,))
-        cls.url_add = reverse('notes:add')
-        cls.url_delete = reverse('notes:delete', args=(cls.note.slug,))
-        cls.url_success = reverse('notes:success')
+        cls.url_edit = get_url_edit(cls.note)
+        cls.url_add = URL_ADD
+        cls.url_delete = get_url_delete(cls.note)
+        cls.url_success = URL_SUCCESS
 
     def test_not_unique_slug(self):
         """Проверяем, что невозможно создать две заметки с одинаковым slug."""
@@ -118,6 +102,21 @@ class TestEditDeleteLogic(TestCase):
         self.assertRedirects(response, self.url_success)
         self.assertEqual(Note.objects.count(), (note_count_db - 1))
 
+    def test_author_can_edit_note(self):
+        """Проверяем, что пользователь может редактировать свои заметки."""
+        response = self.author_client.post(self.url_edit, self.form_data)
+        self.assertRedirects(response, self.url_success)
+        self.note.refresh_from_db()
+        self.assertEqual(self.note.title, self.form_data['title'])
+        self.assertEqual(self.note.text, self.form_data['text'])
+        self.assertEqual(self.note.slug, self.form_data['slug'])
+
+    def test_other_user_cant_delete_note(self):
+        """Проверяем, что пользователь не может удалять чужие заметки."""
+        note_count_db = Note.objects.count()
+        response = self.not_author_client.post(self.url_delete)
+        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
+        self.assertEqual(Note.objects.count(), note_count_db)
     def test_author_can_edit_note(self):
         """Проверяем, что пользователь может редактировать свои заметки."""
         response = self.author_client.post(self.url_edit, self.form_data)

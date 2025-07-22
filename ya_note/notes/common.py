@@ -19,7 +19,6 @@ class BaseNoteTestCase(TestCase):
             author=cls.author
         )
 
-
 # Common URLs
 URL_HOME = reverse('notes:home')
 URL_LIST = reverse('notes:list')
@@ -28,14 +27,11 @@ URL_SUCCESS = reverse('notes:success')
 URL_LOGIN = reverse('users:login')
 URL_SIGNUP = reverse('users:signup')
 
-
 def get_url_edit(note):
     return reverse('notes:edit', args=(note.slug,))
 
-
 def get_url_detail(note):
     return reverse('notes:detail', args=(note.slug,))
-
 
 def get_url_delete(note):
     return reverse('notes:delete', args=(note.slug,))

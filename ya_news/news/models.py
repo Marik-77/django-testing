@@ -1,10 +1,10 @@
 from datetime import datetime
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import models
 
 User = get_user_model()
-
 
 class News(models.Model):
     title = models.CharField(max_length=50)
@@ -26,7 +26,7 @@ class Comment(models.Model):
         on_delete=models.CASCADE
     )
     author = models.ForeignKey(
-        User,
+        settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
     )
     text = models.TextField()

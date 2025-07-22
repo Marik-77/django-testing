@@ -100,16 +100,8 @@ def comment(news, author):
 
 @pytest.fixture
 def new_comment(news, author):
-    for index in range(10):
-        Comment.objects.create(
-            news=news, author=author, text=f'Tекст {index}',
-        )
-
-
-def new_comment(news, author):
     now = timezone.now()
     for index in range(10):
         new_comment = Comment.objects.create(
             news=news, author=author, text=f'Tекст {index}',
         )
-        new_comment.created = now + timedelta(days=index)
