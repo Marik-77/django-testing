@@ -2,7 +2,7 @@ from http import HTTPStatus
 
 from .core.core_test_case import (
     CoreTestCase,
-    URL_HOME, URL_LOGIN, URL_SIGNUP, URL_ADD,
+    URL_HOME, URL_LOGIN, URL_LOGOUT, URL_SIGNUP, URL_ADD,
     URL_LIST, URL_SUCCESS, URL_DETAIL, URL_EDIT, URL_DELETE,
     URL_LIST_WITH_NEXT, URL_SUCCESS_WITH_NEXT, URL_ADD_WITH_NEXT,
     URL_DETAIL_WITH_NEXT, URL_EDIT_WITH_NEXT, URL_DELETE_WITH_NEXT,
@@ -15,6 +15,7 @@ class TestRoutesAvailability(CoreTestCase):
             # Доступность страниц для анонимных пользователей
             (URL_HOME, self.client, HTTPStatus.OK),
             (URL_LOGIN, self.client, HTTPStatus.OK),
+            (URL_LOGOUT, self.client, HTTPStatus.OK),
             (URL_SIGNUP, self.client, HTTPStatus.OK),
 
             # Доступность страниц для авторизованных пользователей

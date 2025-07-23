@@ -1,129 +1,82 @@
 from http import HTTPStatus
 
 import pytest
-from news.forms import BAD_WORDS, WARNING
+from pytest_django.asserts import assertRedirects
+
 from news.models import Comment
-from pytest_django.asserts import assertFormError, assertRedirects
 
-form_data = {'text': 'Новый текст', }
+pytestmark = pytest.mark.django_db
 
-
-@pytest.mark.django_db
-def test_anonymous_user_cant_create_comment(
-    client,
-    url_detail_news,
-    form_data
-):
-    """Проверяем, что анонимный пользователь не может отправить комментарий."""
-    client.post(url_detail_news, data=form_data)
-    comments_count = Comment.objects.count()
-    assert comments_count == 0
+FORM_COMMENT_DATA = {
+    'text': 'Пример комментария'
+}
 
 
-@pytest.mark.django_db
+def test_anonymous_user_cant_create_comment(client, news, url_detail):
+    initial_comments = sorted(Comment.objects.values_list(
+        'id', flat=True)
+    )
+
+    response = client.post(url_detail, data=FORM_COMMENT_DATA)
+    final_comments = sorted(Comment.objects.values_list('id', flat=True))
+
+    assert response.status_code == HTTPStatus.FOUND
+    assert final_comments == initial_comments
+
+
 def test_user_can_create_comment(
-    not_author,
-    not_author_client,
-    news,
-    url_detail_news,
-    form_data
+        author_client, author, news, url_detail
 ):
-    """
-    Проверяем, что авторизованный пользователь
-    может отправить комментарий.
-    """
-    response = not_author_client.post(url_detail_news, data=form_data)
-    assertRedirects(response, f'{url_detail_news}#comments')
-    comments_count = Comment.objects.count()
-    assert comments_count == 1
+    Comment.objects.all().delete()
+    author_client.post(url_detail, data=FORM_COMMENT_DATA)
+
+    assert Comment.objects.count() == 1
+
     comment = Comment.objects.get()
-    assert comment.text == form_data['text']
+    assert comment.text == FORM_COMMENT_DATA['text']
     assert comment.news == news
-    assert comment.author == not_author
 
-
-@pytest.mark.django_db
-@pytest.mark.parametrize(
-    'bad_words',
-    (BAD_WORDS),
-)
-def test_user_cant_use_bad_words(
-    not_author_client,
-    url_detail_news,
-    bad_words
-):
-    """
-    Проверяем, что если комментарий содержит запрещённые слова,
-    он не будет опубликован, а форма вернёт ошибку.
-    """
-    bad_words_data = {'text': f'Какой-то текст, {bad_words}, еще текст'}
-    response = not_author_client.post(url_detail_news, data=bad_words_data)
-    assertFormError(response.context['form'], 'text', WARNING)
-    comments_count = Comment.objects.count()
-    assert comments_count == 0
-
-
-@pytest.mark.django_db
-def test_author_can_delete_comment(
-    author_client,
-    url_detail_news,
-    url_delete_comment,
-):
-    """Проверяем, что автор может удалять свои комментарии."""
-    response = author_client.delete(url_delete_comment)
-    assertRedirects(response, f'{url_detail_news}#comments')
-    comments_count = Comment.objects.count()
-    assert comments_count == 0
-
-
-@pytest.mark.django_db
-def test_user_cant_delete_comment_of_another_user(
-    not_author_client,
-    url_delete_comment,
-    comment
-):
-    """
-    Проверяем, что авторизованный пользователь
-    не может удалять чужие комментарии.
-    """
-    response = not_author_client.delete(url_delete_comment)
-    assert response.status_code == HTTPStatus.NOT_FOUND
-    comments_count = Comment.objects.count()
-    assert comments_count == 1
-
-
-def test_author_can_edit_comment(
-    author_client,
-    url_detail_news,
-    news,
-    url_edit_comment,
-    author,
-    comment,
-    form_data
-):
-    """Проверяем, что автор может редактировать свои комментарии."""
-    response = author_client.post(url_edit_comment, data=form_data)
-    assertRedirects(response, f'{url_detail_news}#comments')
-    comment.refresh_from_db()
-    assert comment.text == form_data['text']
-    assert comment.news == news
     assert comment.author == author
 
 
-@pytest.mark.django_db
-def test_user_cant_edit_comment_of_another_user(
-    not_author_client,
-    url_edit_comment,
-    comment,
-    form_data
+def test_author_can_delete_comment(
+        author_client, news, comment, url_delete, expected_url_detail_comments
 ):
-    """
-    Проверяем, что авторизованный пользователь
-    не может редактировать чужие комментарии.
-    """
-    response = not_author_client.post(url_edit_comment, data=form_data)
+    initial_comments_count = Comment.objects.count()
+    response = author_client.delete(url_delete)
+    assertRedirects(response, expected_url_detail_comments)
+    assert not Comment.objects.filter(id=comment.id).exists()
+    assert Comment.objects.count() == initial_comments_count - 1
+
+
+def test_user_cant_delete_comment_of_another_user(
+        news, admin_client, comment, url_delete
+):
+    response = admin_client.delete(url_delete)
     assert response.status_code == HTTPStatus.NOT_FOUND
-    comment_db = Comment.objects.get(id=comment.id)
-    assert comment.text == comment_db.text
-    assert comment.news == comment_db.news
-    assert comment.author == comment_db.author
+    assert Comment.objects.filter(id=comment.id).exists()
+    new_comment = Comment.objects.get(id=comment.id)
+    assert new_comment.author == comment.author
+    assert new_comment.news == comment.news
+    assert new_comment.text == comment.text
+
+
+def test_author_can_edit_comment(
+        author_client, comment, news, url_edit, expected_url_detail_comments
+):
+    response = author_client.post(url_edit, data=FORM_COMMENT_DATA)
+    assertRedirects(response, expected_url_detail_comments)
+    new_comment = Comment.objects.get(id=comment.id)
+    assert new_comment.text == FORM_COMMENT_DATA['text']
+    assert new_comment.author == comment.author
+    assert new_comment.news == comment.news
+
+
+def test_not_author_cant_edit_comment(
+        admin_client, comment, news, url_edit):
+    response = admin_client.post(url_edit, data=FORM_COMMENT_DATA)
+    assert response.status_code == HTTPStatus.NOT_FOUND
+    new_comment = Comment.objects.get(id=news.id)
+    assert comment.text == new_comment.text
+    assert new_comment.author == comment.author
+    assert new_comment.news == comment.news

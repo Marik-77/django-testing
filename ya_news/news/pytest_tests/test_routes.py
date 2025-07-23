@@ -2,66 +2,55 @@ from http import HTTPStatus
 
 import pytest
 from pytest_django.asserts import assertRedirects
+from pytest_lazyfixture import lazy_fixture
+
+pytestmark = pytest.mark.django_db
+
+URL_HOME = lazy_fixture('url_home')
+URL_SIGNUP = lazy_fixture('url_signup')
+URL_LOGIN = lazy_fixture('url_login')
+URL_LOGOUT = lazy_fixture('url_logout')
+URL_DETAIL = lazy_fixture('url_detail')
+URL_EDIT = lazy_fixture('url_edit')
+URL_DELETE = lazy_fixture('url_delete')
+EXPECTED_URL_EDIT = pytest.lazy_fixture('expected_url_edit')
+EXPECTED_URL_DELETE = pytest.lazy_fixture('expected_url_delete')
+CLIENT = lazy_fixture('client')
+AUTHOR_CLIENT = lazy_fixture('author_client')
+NOT_AUTHOR_CLIENT = lazy_fixture('not_author_client')
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize(
-    'url',
+    'reverse_url, parametrized_client, expected_status',
     (
-        (pytest.lazy_fixture('url_home')),
-        (pytest.lazy_fixture('url_detail_news')),
-        (pytest.lazy_fixture('url_login')),
-        (pytest.lazy_fixture('url_signup')),
-    ),
-)
-def test_pages_availability_for_anonymous_user(client, url):
-    """
-    Проверяем, что анонимному пользователю доступны страницы:
-    главная страница, отдельной новости.
-    """
-    response = client.get(url)
-    assert response.status_code == HTTPStatus.OK
+        (URL_HOME, CLIENT, HTTPStatus.OK),
+        (URL_SIGNUP, CLIENT, HTTPStatus.OK),
+        (URL_LOGIN, CLIENT, HTTPStatus.OK),
+        (URL_DETAIL, CLIENT, HTTPStatus.OK),
+        (URL_EDIT, AUTHOR_CLIENT, HTTPStatus.OK),
+        (URL_DELETE, AUTHOR_CLIENT, HTTPStatus.OK),
 
+        (URL_EDIT, NOT_AUTHOR_CLIENT, HTTPStatus.NOT_FOUND),
+        (URL_DELETE, NOT_AUTHOR_CLIENT, HTTPStatus.NOT_FOUND),
 
-@pytest.mark.django_db
-@pytest.mark.parametrize(
-    'parametrized_client, expected_status',
-    (
-        (pytest.lazy_fixture('not_author_client'), HTTPStatus.NOT_FOUND),
-        (pytest.lazy_fixture('author_client'), HTTPStatus.OK)
-    ),
+        (URL_EDIT, CLIENT, HTTPStatus.FOUND),
+        (URL_DELETE, CLIENT, HTTPStatus.FOUND),
+    )
 )
-@pytest.mark.parametrize(
-    'url',
-    (pytest.lazy_fixture('url_edit_comment'),
-     pytest.lazy_fixture('url_delete_comment')),
-)
-def test_availability_for_comment_edit_and_delete(
-        parametrized_client, url, comment, expected_status
+def test_pages_availability(
+        reverse_url, parametrized_client, expected_status
 ):
-    """
-    Проверяем, что на страницы редактирования и удаления комментария
-    автору доступны, а авторизированному пользователю
-    недоступны(возвращается ошибка 404).
-    """
-    response = parametrized_client.get(url)
-    assert response.status_code == expected_status
+    assert parametrized_client.get(reverse_url).status_code == expected_status
 
 
-@pytest.mark.django_db
 @pytest.mark.parametrize(
-    'url',
-    (
-        (pytest.lazy_fixture('url_edit_comment')),
-        (pytest.lazy_fixture('url_delete_comment')),
-    ),
+    'url, expected_url',
+    [
+        (URL_EDIT, EXPECTED_URL_EDIT),
+        (URL_DELETE, EXPECTED_URL_DELETE),
+    ],
 )
-def test_redirects(client, url, url_login):
-    """
-    Проверяем, что при попытке перейти на страницу редактирования
-    или удаления комментария анонимный пользователь
-    перенаправляется на страницу авторизации.
-    """
-    expected_url = f'{url_login}?next={url}'
-    response = client.get(url)
-    assertRedirects(response, expected_url)
+def test_redirect_for_anonymous_client(
+        client, url, expected_url
+):
+    assertRedirects(client.get(url), expected_url)
